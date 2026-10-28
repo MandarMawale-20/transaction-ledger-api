@@ -1,0 +1,896 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Transaction Ledger API",
+        "description": "Accounts, credit/debit transactions with idempotent references, history, and atomic transfers.",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/accounts": {
+            "post": {
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Create Account",
+                "description": "Create an account with a zero balance.",
+                "operationId": "create_account_accounts_post",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AccountCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccountOut"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "List Accounts",
+                "description": "List accounts, newest first.",
+                "operationId": "list_accounts_accounts_get",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "default": 20,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "default": 0,
+                            "title": "Offset"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccountPage"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/{account_id}": {
+            "get": {
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Get Account",
+                "description": "Return one account.",
+                "operationId": "get_account_accounts__account_id__get",
+                "parameters": [
+                    {
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Account Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccountOut"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/{account_id}/balance": {
+            "get": {
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Get Balance",
+                "description": "Return an account's current balance.",
+                "operationId": "get_balance_accounts__account_id__balance_get",
+                "parameters": [
+                    {
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Account Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BalanceOut"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/accounts/{account_id}/transactions": {
+            "post": {
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Create Transaction",
+                "description": "Post a credit or debit. An identical retry returns the original with 200.",
+                "operationId": "create_transaction_accounts__account_id__transactions_post",
+                "parameters": [
+                    {
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Account Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TransactionCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransactionCreateOut"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Duplicate reference_id with an identical request: original returned."
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "List Transactions",
+                "description": "List an account's transactions, newest first.",
+                "operationId": "list_transactions_accounts__account_id__transactions_get",
+                "parameters": [
+                    {
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Account Id"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/TransactionType"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "credit or debit; omit for both",
+                            "title": "Type"
+                        },
+                        "description": "credit or debit; omit for both"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "default": 20,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "default": 0,
+                            "title": "Offset"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransactionPage"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/transfers": {
+            "post": {
+                "tags": [
+                    "transfers"
+                ],
+                "summary": "Create Transfer",
+                "description": "Move money atomically between two accounts.",
+                "operationId": "create_transfer_transfers_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TransferCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TransferOut"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Duplicate reference_id with an identical request: original returned."
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "tags": [
+                    "meta"
+                ],
+                "summary": "Health",
+                "description": "Check that the application can reach the database.",
+                "operationId": "health_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AccountCreate": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "title": "Name"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "AccountCreate"
+            },
+            "AccountOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "balance": {
+                        "type": "string",
+                        "title": "Balance"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "balance",
+                    "created_at"
+                ],
+                "title": "AccountOut"
+            },
+            "AccountPage": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccountOut"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "title": "Total"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "title": "Limit"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "title": "Offset"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                ],
+                "title": "AccountPage"
+            },
+            "BalanceOut": {
+                "properties": {
+                    "account_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Account Id"
+                    },
+                    "balance": {
+                        "type": "string",
+                        "title": "Balance"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "account_id",
+                    "balance"
+                ],
+                "title": "BalanceOut"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "TransactionCreate": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/TransactionType"
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "title": "Amount",
+                        "decimal_places": 2,
+                        "gt": 0,
+                        "max_digits": 18
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 500
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "reference_id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Reference Id"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "type",
+                    "amount",
+                    "reference_id"
+                ],
+                "title": "TransactionCreate"
+            },
+            "TransactionCreateOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "account_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Account Id"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/TransactionType"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "title": "Amount"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "reference_id": {
+                        "type": "string",
+                        "title": "Reference Id"
+                    },
+                    "transfer_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Transfer Id"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "duplicate": {
+                        "type": "boolean",
+                        "title": "Duplicate",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "account_id",
+                    "type",
+                    "amount",
+                    "description",
+                    "reference_id",
+                    "transfer_id",
+                    "created_at"
+                ],
+                "title": "TransactionCreateOut"
+            },
+            "TransactionOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "account_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Account Id"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/TransactionType"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "title": "Amount"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "reference_id": {
+                        "type": "string",
+                        "title": "Reference Id"
+                    },
+                    "transfer_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Transfer Id"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "account_id",
+                    "type",
+                    "amount",
+                    "description",
+                    "reference_id",
+                    "transfer_id",
+                    "created_at"
+                ],
+                "title": "TransactionOut"
+            },
+            "TransactionPage": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/TransactionOut"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "total": {
+                        "type": "integer",
+                        "title": "Total"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "title": "Limit"
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "title": "Offset"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "total",
+                    "limit",
+                    "offset"
+                ],
+                "title": "TransactionPage"
+            },
+            "TransactionType": {
+                "type": "string",
+                "enum": [
+                    "credit",
+                    "debit"
+                ],
+                "title": "TransactionType"
+            },
+            "TransferCreate": {
+                "properties": {
+                    "from_account_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "From Account Id"
+                    },
+                    "to_account_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "To Account Id"
+                    },
+                    "amount": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "string"
+                            }
+                        ],
+                        "title": "Amount",
+                        "decimal_places": 2,
+                        "gt": 0,
+                        "max_digits": 18
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 500
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "reference_id": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Reference Id"
+                    }
+                },
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                    "from_account_id",
+                    "to_account_id",
+                    "amount",
+                    "reference_id"
+                ],
+                "title": "TransferCreate"
+            },
+            "TransferOut": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "from_account_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "From Account Id"
+                    },
+                    "to_account_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "To Account Id"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "title": "Amount"
+                    },
+                    "description": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Description"
+                    },
+                    "reference_id": {
+                        "type": "string",
+                        "title": "Reference Id"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "transactions": {
+                        "items": {
+                            "$ref": "#/components/schemas/TransactionOut"
+                        },
+                        "type": "array",
+                        "title": "Transactions"
+                    },
+                    "duplicate": {
+                        "type": "boolean",
+                        "title": "Duplicate",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "from_account_id",
+                    "to_account_id",
+                    "amount",
+                    "description",
+                    "reference_id",
+                    "created_at",
+                    "transactions"
+                ],
+                "title": "TransferOut"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "ctx": {
+                        "type": "object",
+                        "title": "Context"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}
